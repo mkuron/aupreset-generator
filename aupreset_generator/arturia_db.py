@@ -1,3 +1,4 @@
+from collections import defaultdict
 import os
 import plistlib
 import re
@@ -17,12 +18,22 @@ def convert_arturia_db():
 
     db = sqlite3.connect(f'file:{src}?mode=ro', uri=True)
     cur = db.cursor()
-    q = cur.execute("""SELECT Instruments.name, Types_V2.name, Packs.name, Preset_Id.name, file_path, comment
+    q = cur.execute("""SELECT DISTINCT Instruments.name, Types_V2.name
                        FROM Preset_Id
                        INNER JOIN Instruments ON instrument_key = Instruments.key_id
                        INNER JOIN Types_V2 ON type_v2 = Types_V2.key_id
+                       WHERE Types_V2.name NOT LIKE 'Template%'""")
+    types = defaultdict(set)
+    for row in q:
+        types[row[0]].add(row[1])
+    q = cur.execute("""SELECT Instruments.name, Types_V2.name, Packs.name, Preset_Id.name, file_path, comment, Subtypes_V2.name
+                       FROM Preset_Id
+                       INNER JOIN Instruments ON instrument_key = Instruments.key_id
+                       INNER JOIN Types_V2 ON type_v2 = Types_V2.key_id
+                       INNER JOIN Subtypes_V2 ON subtype_v2 = Subtypes_V2.key_id
                        INNER JOIN Packs ON pack = Packs.key_id
-                       WHERE file_path NOT LIKE '%/User/Playlist/%'""")
+                       WHERE file_path NOT LIKE '%/User/Playlist/%'
+                       AND Types_V2.name NOT LIKE 'Template%'""")
     for row in q:
         instrument = os.path.relpath(row[4], start=srcdir).split(os.sep)[0]
         plugin = os.path.join(plugindir, f'{instrument}.component', 'Contents', 'Info.plist')
@@ -30,7 +41,7 @@ def convert_arturia_db():
             continue
         with open(plugin, 'rb') as f:
             magic = int(plistlib.load(f)['AudioComponents'][0]['subtype'].encode('ascii').hex(), base=16)
-        category = row[1].replace(' & ', ' and ')
+        category = row[1].replace(' & ', ' and ') if len(types[instrument]) > 2 else row[6]
         name = row[3]
         if row[2] == 'Vintage Factory' and row[5]:
             m = re.search("Preset ([0-9]+) from the original factory library", row[5])
