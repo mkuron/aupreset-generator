@@ -49,3 +49,7 @@ def convert_arturia_db():
 
         # After switching presets inside the AudioUnit, loading a preset from the DAW controls has no further effect.
         # This is not restricted to generated presets, it also happens when saving/restoring.
+
+
+if __name__ == '__main__':
+    convert_arturia_db()

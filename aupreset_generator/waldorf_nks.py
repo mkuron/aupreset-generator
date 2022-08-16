@@ -77,3 +77,7 @@ def convert_waldorf_nks():
         if not os.path.exists(os.path.dirname(dest)):
             os.makedirs(os.path.dirname(dest))
         write(nksf, dest)
+
+
+if __name__ == '__main__':
+    convert_waldorf_nks()
