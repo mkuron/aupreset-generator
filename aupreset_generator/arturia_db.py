@@ -1,5 +1,6 @@
 import os
 import plistlib
+import re
 import sqlite3
 
 from .aupreset import write
@@ -16,7 +17,7 @@ def convert_arturia_db():
 
     db = sqlite3.connect(f'file:{src}?mode=ro', uri=True)
     cur = db.cursor()
-    q = cur.execute("""SELECT Instruments.name, Types_V2.name, Packs.name, Preset_Id.name, file_path
+    q = cur.execute("""SELECT Instruments.name, Types_V2.name, Packs.name, Preset_Id.name, file_path, comment
                        FROM Preset_Id
                        INNER JOIN Instruments ON instrument_key = Instruments.key_id
                        INNER JOIN Types_V2 ON type_v2 = Types_V2.key_id
@@ -29,11 +30,15 @@ def convert_arturia_db():
             continue
         with open(plugin, 'rb') as f:
             magic = int(plistlib.load(f)['AudioComponents'][0]['subtype'].encode('ascii').hex(), base=16)
-        nksf = {'NISI': {'vendor': 'Arturia', 'name': row[3]}, 'PLID': {'VST.magic': magic}}
         category = row[1].replace(' & ', ' and ')
-        if row[2] not in ['Factory', 'Vintage Factory']:
-            category = os.path.join(row[2], category)
-        dest = os.path.join(destdir, instrument, category, row[3]) + '.aupreset'
+        name = row[3]
+        if row[2] == 'Vintage Factory' and row[5]:
+            m = re.search("Preset ([0-9]+) from the original factory library", row[5])
+            if m:
+                name = f'{m.group(1)} {name}'
+        category = os.path.join(row[2], category)
+        nksf = {'NISI': {'vendor': 'Arturia', 'name': name}, 'PLID': {'VST.magic': magic}}
+        dest = os.path.join(destdir, instrument, category, name) + '.aupreset'
         print(row, dest)
         with open(row[4], 'rb') as f:
             nksf['PCHK'] = f.read()
