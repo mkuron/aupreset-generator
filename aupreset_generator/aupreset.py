@@ -4,6 +4,7 @@ import plistlib
 def write(nksf, filename):
     vendors = {
         'Arturia': ('Artu', 'Controller State'),  # 1098019957
+        'Native Instruments': ('-NI-', 'vstdata'),
         'Waldorf': ('3E00', 'Processor State'),  # 860172336
     }
     manufacturer, field = vendors[nksf['NISI']['vendor']]
