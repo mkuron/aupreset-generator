@@ -1,5 +1,3 @@
-from chunk import Chunk
-
 import msgpack
 
 
@@ -8,13 +6,16 @@ def read(filename):
     with open(filename, "rb") as f:
         f.seek(12)
         while True:
-            try:
-                chunk = Chunk(f, bigendian=False)
-            except EOFError:
+            t = f.read(4).decode('ascii')
+            s = int.from_bytes(f.read(4), 'little')
+            d = f.read(s)[4:]
+            if len(d) == 0:
                 break
-            t = chunk.getname().decode('ascii')
-            d = chunk.read()[4:]
             if t in ['NISI', 'NICA', 'PLID']:
-                d = msgpack.unpackb(d)
-            data[t] = d
-    return data
+                data[t] = msgpack.unpackb(d)
+            else:
+                data[t] = d
+            if s % 2 == 1:
+                f.seek(1, 1)
+        print(data.keys())
+        return data
