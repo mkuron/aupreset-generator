@@ -36,7 +36,8 @@ def convert_arturia_db():
                        INNER JOIN Subtypes_V2 ON subtype_v2 = Subtypes_V2.key_id
                        INNER JOIN Packs ON pack = Packs.key_id
                        WHERE file_path NOT LIKE '%/User/Playlist/%'
-                       AND Types_V2.name NOT LIKE 'Template%'""")
+                       AND Types_V2.name NOT LIKE 'Template%'
+                       AND Packs.name != 'User'""")
     for row in q:
         instrument = os.path.relpath(row[4], start=srcdir).split(os.sep)[0]
         plugin = os.path.join(plugindir, f'{instrument}.component', 'Contents', 'Info.plist')
@@ -48,7 +49,7 @@ def convert_arturia_db():
         category = os.path.join(row[2], category) if len(subtypes[row[0]]) >= 2 else row[2]
         name = row[3]
         if row[2] == 'Vintage Factory' and row[5]:
-            m = re.search("Preset ([0-9]+) from the original factory library", row[5])
+            m = re.search("Preset ([0-9]+) from the original [Ff]actory [Ll]ibrary", row[5])
             if m:
                 name = f'{m.group(1)} {name}'
         nksf = {'NISI': {'vendor': 'Arturia', 'name': name}, 'PLID': {'VST.magic': magic}}
